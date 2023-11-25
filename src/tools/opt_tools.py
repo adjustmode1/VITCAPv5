@@ -1278,4 +1278,19 @@ class ThisGPT2LMHeadModel(GPT2LMHeadModel):
         super().__init__(config)
         self.transformer = ThisGPT2Model(config)
 
+AutoConfig.register("this_xglm", ThisXGLMConfig)
+AutoModel.register(ThisXGLMConfig, ThisXGLMForCausalLM)
+AutoModelForCausalLM.register(ThisXGLMConfig, ThisXGLMForCausalLM)
+
+AutoConfig.register("this_opt", ThisOPTConfig)
+AutoModel.register(ThisOPTConfig, ThisOPTForCausalLM)
+AutoModelForCausalLM.register(ThisOPTConfig, ThisOPTForCausalLM)
+
+AutoConfig.register("this_gpt2", ThisGPT2Config)
+AutoModel.register(ThisGPT2Config, ThisGPT2LMHeadModel)
+AutoModelForCausalLM.register(ThisGPT2Config, ThisGPT2LMHeadModel)
+
+AutoConfig.register("smallcap", SmallCapConfig)
+AutoModel.register(SmallCapConfig, SmallCap)
+
     
