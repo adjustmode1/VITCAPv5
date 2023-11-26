@@ -84,7 +84,8 @@ class ImageCaptioning(nn.Module):
         top = torch.cat((attention_mask, top_right), dim=2)
         full_attention_mask = torch.cat((top, bottom), dim=1)
         data['attention_mask'] = full_attention_mask
-
+    def summary(self,data):
+      print(self.model)
     def forward(self, data):
 
         data = dict(data.items())
@@ -183,7 +184,30 @@ class ImageCaptioning(nn.Module):
             result = self.module(**data)
 
             return result
+    def predict(self,data):
 
+        data = dict(data.items())
+        # this is required in test, but not in train
+        data.pop('key')
+
+        data['gen_tag_ratio'] = 1
+
+        if self.image_encoder:
+            assert 'img_feats' not in data
+            data['img_feats'] = self.image_encoder(data)
+
+            self.construct_attn_mask(data)
+        if self.cfg.use_cbs:
+            data.update({
+                'min_constraints_to_satisfy': 2,
+                'use_cbs': True,
+            })
+
+        data.update(self.test_extra_input)
+        result = self.module(**data)
+        pred = self.tokenizer.batch_decode(result['attention_mask'])
+
+        return pred
     def calc_image_text_matching_loss(self, result, matched):
         logits = self.seq_relationship(result['pooled_output'])
         return torch.nn.functional.binary_cross_entropy_with_logits(
@@ -983,7 +1007,30 @@ class ImageCaptioning(nn.Module):
                                 max_new_tokens=100, no_repeat_ngram_size=0, length_penalty=0,
                                 min_length=1, num_beams=self.beam_size, eos_token_id=self.tokenizer.eos_token_id)
             return pred
+    def predict(self, data):
+        decoder_input_id = prep_strings('', self.tokenizer, is_test=True)
+                
+        pixel_values = self.feature_extractor(data, return_tensors="pt").pixel_values
 
+        with torch.no_grad():
+            pred = self.model.generate(pixel_values.to(self.device),
+                            decoder_input_ids=torch.tensor([decoder_input_id]).to(self.device),
+                            max_new_tokens=100, no_repeat_ngram_size=0, length_penalty=0,
+                            min_length=1, num_beams=self.beam_size, eos_token_id=self.tokenizer.eos_token_id)
+
+        SIMPLE_PREFIX = "This image shows "
+
+        pred = pred[0].split(SIMPLE_PREFIX)[-1]
+        pred = pred.replace(self.tokenizer.pad_token, '')
+        if pred.startswith(self.tokenizer.bos_token):
+            pred = pred[len(self.tokenizer.bos_token):]
+        if pred.endswith(self.tokenizer.eos_token):
+            pred = pred[:-len(self.tokenizer.eos_token)]
+        pred = pred.replace('_',' ')
+        pred = pred.replace('!','')
+
+        pred = tokenizer.batch_decode(pred)
+        return pred
     def calc_image_text_matching_loss(self, result, matched):
         logits = self.seq_relationship(result['pooled_output'])
         return torch.nn.functional.binary_cross_entropy_with_logits(
