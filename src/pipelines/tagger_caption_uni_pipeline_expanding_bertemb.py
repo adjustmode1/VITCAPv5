@@ -907,6 +907,867 @@ class CaptionUniPipeline(UniPipeline):
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+# unpad
+
+
+
 from src.tools.opt_tools import *
 from transformers.models.auto.configuration_auto import AutoConfig
 from transformers import AutoTokenizer, CLIPFeatureExtractor, AutoModel, ViTFeatureExtractor, AutoModelForCausalLM, GPT2Tokenizer
@@ -1019,7 +1880,7 @@ class ImageCaptioning(nn.Module):
         pred = self.tokenizer.batch_decode(pred)[0]
         SIMPLE_PREFIX = "This image shows "
 
-        pred = pred[0].split(SIMPLE_PREFIX)[-1]
+        pred = pred.split(SIMPLE_PREFIX)[-1]
         pred = pred.replace(self.tokenizer.pad_token, '')
         if pred.startswith(self.tokenizer.bos_token):
             pred = pred[len(self.tokenizer.bos_token):]
