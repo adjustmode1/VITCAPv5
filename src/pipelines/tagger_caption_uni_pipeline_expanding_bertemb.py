@@ -908,7 +908,7 @@ class ImageCaptioning(nn.Module):
         self.test_extra_input = test_extra_input
         self.image_encoder = image_encoder
         self.cfg = cfg
-        self.beam_size = cfg.num_beams
+        self.beam_size = cfg['num_beams']
         self.acc = MultiLabelAccuracy()
         self.map = mAPMeter()
 
