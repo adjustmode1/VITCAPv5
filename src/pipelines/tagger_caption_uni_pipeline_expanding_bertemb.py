@@ -919,25 +919,26 @@ class ImageCaptioning(nn.Module):
         self.tokenizer.pad_token = PAD_TOKEN
         self.tokenizer.eos_token = EOS_TOKEN
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        checkpoint_path = cfg.checkpoint_path
+        checkpoint_path = cfg['checkpoint_path']
         config = AutoConfig.from_pretrained(checkpoint_path+"config.json")
+        self.model_temp = model
         self.model = AutoModel.from_pretrained(checkpoint_path)
         self.model.config = config
         self.model.eval()
         self.model.to(self.device)
-        if cfg.pert_img_prob is not None and cfg.pert_img_prob > 0:
-            # we need an image text matching loss on the pooled output
-            # number of relationship is always 1, we use BCE loss
-            self.seq_relationship = nn.Linear(model.bert.pooler.dense.weight.shape[0], 1)
-            assert self.cfg.mask_type != 'seq2seq', 'matching loss is useless'
-        else:
-            self.seq_relationship = None
+        # if cfg['pert_img_prob'] is not None and cfg['pert_img_prob'] > 0:
+        #     # we need an image text matching loss on the pooled output
+        #     # number of relationship is always 1, we use BCE loss
+        #     self.seq_relationship = nn.Linear(model.bert.pooler.dense.weight.shape[0], 1)
+        #     assert self.cfg['mask_type'] != 'seq2seq', 'matching loss is useless'
+        # else:
+        #     self.seq_relationship = None
 
-        self.category = cfg.category
-        if self.category == 'vinvl':
-            self.vocab = self.tokenizer['idx_to_label']
-        else:
-            self.vocab = self.bert_tokenizer.ids_to_tokens
+        # self.category = cfg.category
+        # if self.category == 'vinvl':
+        #     self.vocab = self.tokenizer['idx_to_label']
+        # else:
+        #     self.vocab = self.bert_tokenizer.ids_to_tokens
 
     def construct_attn_mask(self, data):
         img_feats = data['img_feats']
@@ -969,6 +970,8 @@ class ImageCaptioning(nn.Module):
         full_attention_mask = torch.cat((top, bottom), dim=1)
         data['attention_mask'] = full_attention_mask
 
+    def summary(self):
+      print(self.model_temp)
     def forward(self, data):
             decoder_input_id = prep_strings('', self.tokenizer, is_test=True)
                     
