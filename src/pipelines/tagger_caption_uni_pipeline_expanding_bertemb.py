@@ -899,6 +899,8 @@ class ImageCaptioning(nn.Module):
                  cfg=None,
                  ):
         super().__init__()
+        print('----------------------------- config --------------------')
+        print(cfg)
         self.module = model
         self.iter = 0
         self.tokenizer = tokenizer
@@ -906,7 +908,7 @@ class ImageCaptioning(nn.Module):
         self.test_extra_input = test_extra_input
         self.image_encoder = image_encoder
         self.cfg = cfg
-        self.beam_size = cfg.beam_size
+        self.beam_size = cfg.num_beams
         self.acc = MultiLabelAccuracy()
         self.map = mAPMeter()
 
