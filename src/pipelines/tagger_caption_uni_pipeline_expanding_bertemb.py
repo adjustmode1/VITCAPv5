@@ -923,8 +923,6 @@ class ImageCaptioning(nn.Module):
                  cfg=None,
                  ):
         super().__init__()
-        print('----------------------------- config --------------------')
-        print(cfg)
         self.module = model
         self.iter = 0
         self.tokenizer = tokenizer
@@ -1018,6 +1016,7 @@ class ImageCaptioning(nn.Module):
                             max_new_tokens=100, no_repeat_ngram_size=0, length_penalty=0,
                             min_length=1, num_beams=self.beam_size, eos_token_id=self.tokenizer.eos_token_id)
 
+        pred = self.tokenizer.batch_decode(pred)[0]
         SIMPLE_PREFIX = "This image shows "
 
         pred = pred[0].split(SIMPLE_PREFIX)[-1]
@@ -1029,7 +1028,6 @@ class ImageCaptioning(nn.Module):
         pred = pred.replace('_',' ')
         pred = pred.replace('!','')
 
-        pred = tokenizer.batch_decode(pred)
         return pred
     def calc_image_text_matching_loss(self, result, matched):
         logits = self.seq_relationship(result['pooled_output'])
