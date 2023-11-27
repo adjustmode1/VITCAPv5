@@ -1795,10 +1795,10 @@ class ImageCaptioning(nn.Module):
         self.acc = MultiLabelAccuracy()
         self.map = mAPMeter()
 
-        self.tokenizer = GPT2Tokenizer.from_pretrained('NlpHUST/gpt2-vietnamese')
-        self.feature_extractor = CLIPFeatureExtractor.from_pretrained("openai/clip-vit-base-patch32")
         PAD_TOKEN = '!'
         EOS_TOKEN = '.'
+        self.tokenizer = AutoTokenizer.from_pretrained("gpt2")
+        self.feature_extractor = CLIPFeatureExtractor.from_pretrained("openai/clip-vit-base-patch32")
         self.tokenizer.pad_token = PAD_TOKEN
         self.tokenizer.eos_token = EOS_TOKEN
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
