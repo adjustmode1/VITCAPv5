@@ -1810,7 +1810,7 @@ class ImageCaptioning(nn.Module):
         self.retrieval_index = faiss.read_index('/content/drive/MyDrive/smallCap2/datastore/coco_index')
         self.template = open('/content/drive/MyDrive/smallCap2/src/template.txt').read().strip() + ' '
         self.retrieval_index = faiss.index_cpu_to_gpu(res, 0, self.retrieval_index)
-        retrieval_model, feature_extractor_retrieval = clip.load("RN50x64", device=self.device)
+        self.retrieval_model, self.feature_extractor_retrieval = clip.load("RN50x64", device=self.device)
         PAD_TOKEN = '!'
         EOS_TOKEN = '.'
         self.tokenizer.pad_token = PAD_TOKEN
@@ -1872,10 +1872,10 @@ class ImageCaptioning(nn.Module):
         pixel_values_retrieval = self.feature_extractor_retrieval(data).to(self.device)
         
         with torch.no_grad():
-          image_embedding = retrieval_model.encode_image(pixel_values_retrieval.unsqueeze(0)).cpu().numpy()
+          image_embedding = self.retrieval_model.encode_image(pixel_values_retrieval.unsqueeze(0)).cpu().numpy()
 
-        nns = retrieve_caps(image_embedding, retrieval_index)[0]
-        caps = [captions[i] for i in nns][:4]
+        nns = retrieve_caps(image_embedding, self.retrieval_index)[0]
+        caps = [self.captions[i] for i in nns][:4]
 
         decoder_input_ids = prep_strings('', self.tokenizer, template=self.template, retrieved_caps=caps, k=4, is_test=True)
 
