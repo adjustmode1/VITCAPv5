@@ -1805,7 +1805,7 @@ class ImageCaptioning(nn.Module):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.tokenizer = GPT2Tokenizer.from_pretrained('NlpHUST/gpt2-vietnamese')
         self.feature_extractor = CLIPFeatureExtractor.from_pretrained("openai/clip-vit-base-patch32")
-        captions = json.load(open('/content/drive/MyDrive/smallCap2/datastore/coco_index_captions.json'))
+        self.captions = json.load(open('/content/drive/MyDrive/smallCap2/datastore/coco_index_captions.json'))
         res = faiss.StandardGpuResources()  
         self.retrieval_index = faiss.read_index('/content/drive/MyDrive/smallCap2/datastore/coco_index')
         self.template = open('/content/drive/MyDrive/smallCap2/src/template.txt').read().strip() + ' '
@@ -1891,10 +1891,10 @@ class ImageCaptioning(nn.Module):
         pixel_values_retrieval = self.feature_extractor_retrieval(data).to(self.device)
         
         with torch.no_grad():
-          image_embedding = retrieval_model.encode_image(pixel_values_retrieval.unsqueeze(0)).cpu().numpy()
+          image_embedding = self.retrieval_model.encode_image(pixel_values_retrieval.unsqueeze(0)).cpu().numpy()
 
-        nns = retrieve_caps(image_embedding, retrieval_index)[0]
-        caps = [captions[i] for i in nns][:4]
+        nns = retrieve_caps(image_embedding, self.retrieval_index)[0]
+        caps = [self.captions[i] for i in nns][:4]
 
         decoder_input_ids = prep_strings('', self.tokenizer, template=self.template, retrieved_caps=caps, k=4, is_test=True)
 
