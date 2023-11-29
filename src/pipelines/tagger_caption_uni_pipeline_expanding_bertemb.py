@@ -1769,10 +1769,17 @@ class CaptionUniPipeline(UniPipeline):
 
 
 from src.tools.opt_tools import *
+import clip
+import faiss
 from transformers.models.auto.configuration_auto import AutoConfig
 from transformers import AutoTokenizer, CLIPFeatureExtractor, AutoModel, ViTFeatureExtractor, AutoModelForCausalLM, GPT2Tokenizer
 import torch
 
+def retrieve_caps(image_embedding, index, k=4):
+    xq = image_embedding.astype(np.float32)
+    faiss.normalize_L2(xq)
+    D, I = index.search(xq, k) 
+    return I
 
 class ImageCaptioning(nn.Module):
     def __init__(self,
@@ -1795,13 +1802,19 @@ class ImageCaptioning(nn.Module):
         self.acc = MultiLabelAccuracy()
         self.map = mAPMeter()
 
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.tokenizer = GPT2Tokenizer.from_pretrained('NlpHUST/gpt2-vietnamese')
         self.feature_extractor = CLIPFeatureExtractor.from_pretrained("openai/clip-vit-base-patch32")
+        captions = json.load(open('/content/drive/MyDrive/smallCap2/datastore/coco_index_captions.json'))
+        res = faiss.StandardGpuResources()  
+        self.retrieval_index = faiss.read_index('/content/drive/MyDrive/smallCap2/datastore/coco_index')
+        self.template = open('/content/drive/MyDrive/smallCap2/src/template.txt').read().strip() + ' '
+        self.retrieval_index = faiss.index_cpu_to_gpu(res, 0, self.retrieval_index)
+        retrieval_model, feature_extractor_retrieval = clip.load("RN50x64", device=self.device)
         PAD_TOKEN = '!'
         EOS_TOKEN = '.'
         self.tokenizer.pad_token = PAD_TOKEN
         self.tokenizer.eos_token = EOS_TOKEN
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
         checkpoint_path = cfg['checkpoint_path']
         config = AutoConfig.from_pretrained(checkpoint_path+"config.json")
         self.model_temp = model
@@ -1856,39 +1869,55 @@ class ImageCaptioning(nn.Module):
     def summary(self):
       print(self.model_temp)
     def forward(self, data):
-            decoder_input_id = prep_strings('', self.tokenizer, is_test=True)
-                    
-            pixel_values = self.feature_extractor(data, return_tensors="pt").pixel_values
+        pixel_values_retrieval = self.feature_extractor_retrieval(data).to(self.device)
+        
+        with torch.no_grad():
+          image_embedding = retrieval_model.encode_image(pixel_values_retrieval.unsqueeze(0)).cpu().numpy()
 
-            with torch.no_grad():
-                pred = self.model.generate(pixel_values.to(self.device),
-                                decoder_input_ids=torch.tensor([decoder_input_id]).to(self.device),
-                                max_new_tokens=100, no_repeat_ngram_size=0, length_penalty=0,
-                                min_length=1, num_beams=self.beam_size, eos_token_id=self.tokenizer.eos_token_id)
-            return pred
-    def predict(self, data):
-        decoder_input_id = prep_strings('', self.tokenizer, is_test=True)
-                
+        nns = retrieve_caps(image_embedding, retrieval_index)[0]
+        caps = [captions[i] for i in nns][:4]
+
+        decoder_input_ids = prep_strings('', self.tokenizer, template=self.template, retrieved_caps=caps, k=4, is_test=True)
+
         pixel_values = self.feature_extractor(data, return_tensors="pt").pixel_values
 
         with torch.no_grad():
             pred = self.model.generate(pixel_values.to(self.device),
-                            decoder_input_ids=torch.tensor([decoder_input_id]).to(self.device),
+                            decoder_input_ids=torch.tensor([decoder_input_ids]).to(self.device),
+                            max_new_tokens=100, no_repeat_ngram_size=0, length_penalty=0,
+                            min_length=1, num_beams=self.beam_size, eos_token_id=self.tokenizer.eos_token_id)
+        return pred
+    def predict(self, data):
+        pixel_values_retrieval = self.feature_extractor_retrieval(data).to(self.device)
+        
+        with torch.no_grad():
+          image_embedding = retrieval_model.encode_image(pixel_values_retrieval.unsqueeze(0)).cpu().numpy()
+
+        nns = retrieve_caps(image_embedding, retrieval_index)[0]
+        caps = [captions[i] for i in nns][:4]
+
+        decoder_input_ids = prep_strings('', self.tokenizer, template=self.template, retrieved_caps=caps, k=4, is_test=True)
+
+        pixel_values = self.feature_extractor(data, return_tensors="pt").pixel_values
+
+        with torch.no_grad():
+            pred = self.model.generate(pixel_values.to(self.device),
+                            decoder_input_ids=torch.tensor([decoder_input_ids]).to(self.device),
                             max_new_tokens=100, no_repeat_ngram_size=0, length_penalty=0,
                             min_length=1, num_beams=self.beam_size, eos_token_id=self.tokenizer.eos_token_id)
 
         pred = self.tokenizer.batch_decode(pred)[0]
         SIMPLE_PREFIX = "This image shows "
-
-        pred = pred.split(SIMPLE_PREFIX)[-1]
-        pred = pred.replace(self.tokenizer.pad_token, '')
+        POS_PREFIX = "Similar images show\n\n"
+        pred = pred.replace(POS_PREFIX,'')
+        pred = pred.replace('_',' ')
+        pred = pred.replace('!','')
         if pred.startswith(self.tokenizer.bos_token):
             pred = pred[len(self.tokenizer.bos_token):]
         if pred.endswith(self.tokenizer.eos_token):
             pred = pred[:-len(self.tokenizer.eos_token)]
-        pred = pred.replace('_',' ')
-        pred = pred.replace('!','')
 
+        pred = '\n\n'.join(pred.split(SIMPLE_PREFIX))
         return pred
     def calc_image_text_matching_loss(self, result, matched):
         logits = self.seq_relationship(result['pooled_output'])
