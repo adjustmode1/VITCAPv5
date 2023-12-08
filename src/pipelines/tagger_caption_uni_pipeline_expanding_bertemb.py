@@ -1792,82 +1792,31 @@ class ImageCaptioning(nn.Module):
                  cfg=None,
                  ):
         super().__init__()
-        self.module = model
+        del tokenizer
+        del bert_tokenizer
+        del image_encoder
+        del test_extra_input
+        del model
+
         self.iter = 0
-        self.tokenizer = tokenizer
-        self.bert_tokenizer = bert_tokenizer
-        self.test_extra_input = test_extra_input
-        self.image_encoder = image_encoder
         self.cfg = cfg
         self.beam_size = cfg['num_beams']
-        self.acc = MultiLabelAccuracy()
-        self.map = mAPMeter()
 
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.tokenizer = GPT2Tokenizer.from_pretrained('NlpHUST/gpt2-vietnamese')
         self.feature_extractor = CLIPFeatureExtractor.from_pretrained("openai/clip-vit-base-patch32")
-        res = faiss.StandardGpuResources()  
-        # self.retrieval_index = faiss.read_index('/content/drive/MyDrive/smallCap2/datastore/coco_index')
-        # self.template = open('/content/drive/MyDrive/smallCap2/src/template.txt').read().strip() + ' '
-        # self.retrieval_index = faiss.index_cpu_to_gpu(res, 0, self.retrieval_index)
-        self.retrieval_model, self.feature_extractor_retrieval = clip.load("RN50x64", device=self.device)
+
         PAD_TOKEN = '!'
         EOS_TOKEN = '.'
         self.tokenizer.pad_token = PAD_TOKEN
         self.tokenizer.eos_token = EOS_TOKEN
         checkpoint_path = cfg['checkpoint_path']
         config = AutoConfig.from_pretrained(checkpoint_path+"config.json")
-        self.model_temp = model
         self.model = AutoModel.from_pretrained(checkpoint_path)
         self.model.config = config
         self.model.eval()
         self.model.to(self.device)
-        # if cfg['pert_img_prob'] is not None and cfg['pert_img_prob'] > 0:
-        #     # we need an image text matching loss on the pooled output
-        #     # number of relationship is always 1, we use BCE loss
-        #     self.seq_relationship = nn.Linear(model.bert.pooler.dense.weight.shape[0], 1)
-        #     assert self.cfg['mask_type'] != 'seq2seq', 'matching loss is useless'
-        # else:
-        #     self.seq_relationship = None
 
-        # self.category = cfg.category
-        # if self.category == 'vinvl':
-        #     self.vocab = self.tokenizer['idx_to_label']
-        # else:
-        #     self.vocab = self.bert_tokenizer.ids_to_tokens
-
-    def construct_attn_mask(self, data):
-        img_feats = data['img_feats']
-        input_ids = data['input_ids']
-        attention_mask = data['attention_mask']
-        batch_size = img_feats.shape[0]
-
-        num_img_feats = img_feats.shape[1]
-        num_token = input_ids.shape[-1]
-        device = input_ids.device
-        top_right = torch.ones((batch_size, num_token, num_img_feats), device=device)
-        if self.cfg.mask_type == 'seqbid':
-            mask_type = data.pop('mask_type')
-            bottom_left = torch.ones((batch_size, num_img_feats, num_token), device=device)
-            # if mask_type is 1, it is seq2seq and we need to zero it out
-            bottom_left[mask_type] = 0
-        elif self.cfg.mask_type in ['seq2seq', 'seq2seq_off']:
-            bottom_left = torch.zeros((batch_size, num_img_feats, num_token), device=device)
-        else:
-            assert self.cfg.mask_type == 'bidirectional'
-            bottom_left = torch.ones((batch_size, num_img_feats, num_token), device=device)
-            if attention_mask.dim() == 2:
-                attention_mask = attention_mask.unsqueeze(dim=1)
-                attention_mask = attention_mask.expand(batch_size, num_token, num_token)
-        bottom_right = torch.ones((batch_size, num_img_feats, num_img_feats), device=device)
-        bottom = torch.cat((bottom_left, bottom_right), dim=2)
-
-        top = torch.cat((attention_mask, top_right), dim=2)
-        full_attention_mask = torch.cat((top, bottom), dim=1)
-        data['attention_mask'] = full_attention_mask
-
-    def summary(self):
-      print(self.model_temp)
     def forward(self, data):
         decoder_input_id = prep_strings('', self.tokenizer, is_test=True)
                 
@@ -1902,7 +1851,3 @@ class ImageCaptioning(nn.Module):
         pred = pred.replace('_',' ')
         pred = pred.replace('!','')
         return pred
-    def calc_image_text_matching_loss(self, result, matched):
-        logits = self.seq_relationship(result['pooled_output'])
-        return torch.nn.functional.binary_cross_entropy_with_logits(
-            logits, matched.float().reshape(logits.shape))
