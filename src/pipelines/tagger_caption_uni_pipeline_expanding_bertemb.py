@@ -1803,7 +1803,11 @@ class ImageCaptioning(nn.Module):
         self.beam_size = cfg['num_beams']
 
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.tokenizer = GPT2Tokenizer.from_pretrained('NlpHUST/gpt2-vietnamese')
+        if cfg['length_penalty'] == 2:
+          self.tokenizer = AutoTokenizer.from_pretrained('gpt2')
+        else:
+          self.tokenizer = GPT2Tokenizer.from_pretrained('NlpHUST/gpt2-vietnamese')
+        
         self.feature_extractor = CLIPFeatureExtractor.from_pretrained("openai/clip-vit-base-patch32")
 
         PAD_TOKEN = '!'
